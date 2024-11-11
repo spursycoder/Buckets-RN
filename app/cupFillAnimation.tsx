@@ -99,9 +99,11 @@ const styles = StyleSheet.create({
     height: 200,
     borderWidth: 2,
     borderColor: "#333",
-    borderRadius: 10,
+    borderBottomRightRadius: 10,
+    borderBottomLeftRadius: 10,
     overflow: "hidden",
     position: "relative",
+    borderTopWidth: 0,
   },
   fill: {
     position: "absolute",
