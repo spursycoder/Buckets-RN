@@ -7,83 +7,60 @@ import {
   StyleSheet,
 } from "react-native";
 
-const CupFillAnimation = () => {
-  const [fillPercentage, setFillPercentage] = useState(0);
-  const fillHeight = useRef(new Animated.Value(0)).current;
-  const overflowOpacity = useRef(new Animated.Value(0)).current;
+const CupFillAnimation = ({ initialValue = 0, totalCapacity = 100 }) => {
+  const [currentValue, setCurrentValue] = useState(initialValue);
+  const fillHeight = useRef(
+    new Animated.Value((initialValue / totalCapacity) * 100)
+  ).current;
 
-  // Function to handle button press
-  const handlePress = () => {
-    if (fillPercentage < 100) {
-      // Increase the fill percentage by 10
-      const newFillPercentage = fillPercentage + 10;
-      setFillPercentage(newFillPercentage);
+  const handlePress = (amount) => {
+    const newValue = Math.max(
+      0,
+      Math.min(currentValue + amount, totalCapacity)
+    );
+    setCurrentValue(newValue);
 
-      // Animate the fill height based on the percentage
-      Animated.timing(fillHeight, {
-        toValue: newFillPercentage,
-        duration: 500, // duration of the fill animation
-        useNativeDriver: false,
-      }).start();
+    const newFillPercentage = (newValue / totalCapacity) * 100;
 
-      // Trigger overflow animation if 100% reached
-      if (newFillPercentage >= 100) {
-        triggerOverflow();
-      }
-    }
+    // Animate the fill height to the new percentage
+    Animated.timing(fillHeight, {
+      toValue: newFillPercentage,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
   };
 
-  // Overflow animation function
-  const triggerOverflow = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(overflowOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(overflowOpacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  };
-
-  // Animated styles for cup fill and overflow
   const fillStyle = {
     height: fillHeight.interpolate({
-      inputRange: [0, 100],
-      outputRange: ["0%", "100%"],
+      inputRange: [0, 100, 110],
+      outputRange: ["0%", "100%", "110%"], // Allow overflow for effect
     }),
-    backgroundColor: "blue",
+    backgroundColor: currentValue > totalCapacity ? "#4DB6AC" : "#1E88E5", // Color change on overflow
     width: "100%",
-    position: "absolute",
-    bottom: 0,
-  };
-
-  const overflowStyle = {
-    opacity: overflowOpacity,
-    backgroundColor: "blue",
-    width: "100%",
-    height: 10,
-    position: "absolute",
-    top: -10,
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.cup}>
-        {/* Filling animation */}
-        <Animated.View style={[styles.fill, fillStyle]} />
-
-        {/* Overflow animation */}
-        {fillPercentage >= 100 && <Animated.View style={overflowStyle} />}
+      {/* Glass container */}
+      <View style={styles.glassContainer}>
+        <View style={styles.glass}>
+          {/* Animated filling */}
+          <Animated.View style={[styles.fill, fillStyle]} />
+        </View>
       </View>
-      <TouchableOpacity style={styles.button} onPress={handlePress}>
-        <Text style={styles.buttonText}>Fill Cup</Text>
-      </TouchableOpacity>
+
+      {/* Buttons to fill or empty the cup */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.button} onPress={() => handlePress(10)}>
+          <Text style={styles.buttonText}>Add 10</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => handlePress(-10)}
+        >
+          <Text style={styles.buttonText}>Remove 10</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -94,7 +71,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  cup: {
+  glassContainer: {
+    width: 150,
+    height: 200,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  glass: {
     width: 100,
     height: 200,
     borderWidth: 2,
@@ -109,8 +92,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
   },
-  button: {
+  buttonContainer: {
+    flexDirection: "row",
     marginTop: 20,
+  },
+  button: {
+    marginHorizontal: 10,
     padding: 10,
     backgroundColor: "#333",
     borderRadius: 5,
